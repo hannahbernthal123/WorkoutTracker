@@ -4,17 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="93e2748d-87e3-4d04-98a8-372b8e8f7bd2" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/src/DefaultSongs.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/liked_songs.txt" beforeDir="false" afterPath="$PROJECT_DIR$/liked_songs.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Main.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/Main.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/RunnerProfile.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/RunnerProfile.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Song.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/Song.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Songstats.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/Songstats.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/SpotifyAuth.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/SpotifyAuth.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Viewer.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/Viewer.java" afterDir="false" />
-    </list>
+    <list default="true" id="93e2748d-87e3-4d04-98a8-372b8e8f7bd2" name="Changes" comment="Done!" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -70,6 +60,23 @@
       <option name="presentableId" value="Default" />
       <updated>1774972494152</updated>
     </task>
+    <task id="LOCAL-00001" summary="Done!">
+      <option name="closed" value="true" />
+      <created>1778649884615</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1778649884615</updated>
+    </task>
+    <task id="LOCAL-00002" summary="Done!">
+      <option name="closed" value="true" />
+      <created>1778649917378</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1778649917378</updated>
+    </task>
+    <option name="localTasksCounter" value="3" />
     <servers />
   </component>
   <component name="UnknownFeatures">
@@ -86,6 +93,10 @@
         </entry>
       </map>
     </option>
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="Done!" />
+    <option name="LAST_COMMIT_MESSAGE" value="Done!" />
   </component>
   <component name="XDebuggerManager">
     <watches-manager>
