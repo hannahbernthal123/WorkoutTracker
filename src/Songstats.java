@@ -6,10 +6,11 @@ import org.json.*;
 
 public class Songstats {
 
-    private static final String API_KEY = "79bb0fde-155e-4bf7-9f26-6067d11a6aa7";
+    private static final String API_KEY = "f8b66de1-1a14-4733-a192-b48796a04382";
     private static final String BASE_URL = "https://api.songstats.com/enterprise/v1";
 
     private HttpClient client;
+
 
     public Songstats() {
         this.client = HttpClient.newHttpClient();
@@ -50,50 +51,61 @@ public class Songstats {
 
         JSONObject trackInfo = root.getJSONObject("track_info");
 
-        // Get title
         String title = trackInfo.getString("title");
 
-        // Get first artist name
         String artist = trackInfo.getJSONArray("artists")
                 .getJSONObject(0)
                 .getString("name");
 
-        // Get first genre (or "unknown" if none listed)
         String genre = "unknown";
         JSONArray genres = trackInfo.getJSONArray("genres");
         if (genres.length() > 0) {
             genre = genres.getString(0);
         }
 
-        // Parse audio_analysis array — find each field by its "key"
         JSONArray analysis = root.getJSONArray("audio_analysis");
 
         int bpm = 0;
         int durationSec = 0;
-        int energyLevel = 5; // default fallback
+        int energyLevel = 5;
 
         for (int i = 0; i < analysis.length(); i++) {
             JSONObject entry = analysis.getJSONObject(i);
             String key = entry.getString("key");
             String value = entry.getString("value");
 
+            // Print every key/value so we can see what the API returns
+            System.out.println("Key: " + key + "  Value: " + value);
+
             switch (key) {
                 case "tempo":
                     bpm = (int) Math.round(Double.parseDouble(value));
                     break;
                 case "duration":
-                    // Format is "MM:SS" — convert to seconds
-                    String[] parts = value.split(":");
-                    durationSec = Integer.parseInt(parts[0]) * 60
-                            + Integer.parseInt(parts[1]);
+                    try {
+                        if (value.contains(":")) {
+                            String[] parts = value.split(":");
+                            durationSec = Integer.parseInt(parts[0]) * 60
+                                    + Integer.parseInt(parts[1]);
+                        } else {
+                            durationSec = (int) (Double.parseDouble(value) / 1000.0);
+                        }
+                    } catch (Exception e) {
+                        System.out.println("Could not parse duration: " + value);
+                        durationSec = 200;
+                    }
                     break;
                 case "energy":
-                    // Energy is 0.0–1.0, scale to 1–10
                     energyLevel = (int) Math.round(Double.parseDouble(value) * 10);
                     break;
             }
         }
 
-        return new Song(title, artist, bpm, durationSec, genre, energyLevel);
+        System.out.println("Built song: " + title
+                + " bpm=" + bpm
+                + " duration=" + durationSec
+                + " energy=" + energyLevel);
+
+        return new Song(spotifyTrackId, title, artist, bpm, durationSec, genre, energyLevel);
     }
 }

@@ -14,37 +14,33 @@ public class RunnerProfile {
         this.weight = weight;
     }
 
-    public double[] getCadences() {
-        double[] cadences = new double[3];
-        cadences[0] = calcCadence(10.67);
-        cadences[1] = calcCadence(7.63);
-        cadences[2] = calcCadence(5.37);
-        return cadences;
+
+    public double calcCadenceFromPace(int minutes, int seconds) {
+        double minsPerMile = minutes + (seconds / 60.0);
+        return calcCadence(minsPerMile);
     }
 
     public double calcCadence(double minsPerMile) {
-        // Convert pace to meters per second because that's what formula uses
+        // Convert pace to meters per second
         double speedMps = 1609.34 / (minsPerMile * 60);
 
-        // Convert height (inches) to leg length (cm)
+        // height is in inches, convert to cm first, THEN take 45%
+        double heightCm = height * 2.54;
         if (legLength == 0) {
-            legLength = height * .45;
+            legLength = heightCm * 0.45; // leg length in cm
         }
 
-        // Convert legLength to cm for formula
-        double legLengthCm = legLength * 2.54;
+        // legLength is now already in cm, no need to multiply by 2.54 again
+        double legLengthCm = legLength;
 
-        // Taylor-Haas regression formula
-        // "start at 254.858 steps per minute, subtract about 1.25 for every cm of leg length (taller = fewer steps),
-        // add about 3.67 for every m/s of speed (faster = more steps)"
+        // Taylor-Haas formula
         double baseCadence = (-1.251 * legLengthCm) + (3.665 * speedMps) + 254.858;
 
-        // Slight adjustment based on your weight
+        // Weight adjustment
         double weightAdj = 1.0 + 0.04 * ((154.0 - weight) / 154.0);
 
         return baseCadence * weightAdj;
     }
-
 
     public int getHeight() {
         return height;

@@ -10,9 +10,12 @@ public class Song {
     private String genre;
     private int energyLevel;
     private int bpmMatchRatio;
+    private String trackId;
+    private String segmentType = "";
 
 
-    public Song(String title, String artist, int bpm, int duration, String genre, int energyLevel) {
+    public Song(String trackID, String title, String artist, int bpm, int duration, String genre, int energyLevel) {
+        this.trackId = trackID;
         this.title = title;
         this.artist = artist;
         if (bpm > 199) {
@@ -48,10 +51,14 @@ public class Song {
 
     public int getEnergyLevel() { return energyLevel; }
     public void setEnergyLevel(int energyLevel) { this.energyLevel = energyLevel; }
+    public String getTrackId() { return trackId; }
 
     public int getBpmMatchRatio() {
         return bpmMatchRatio;
     }
+
+    public String getSegmentType() { return segmentType; }
+    public void setSegmentType(String segmentType) { this.segmentType = segmentType; }
 
     public void setBpmMatchRatio(int newBpm) {
         this.bpmMatchRatio = newBpm;

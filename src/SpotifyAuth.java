@@ -1,7 +1,6 @@
 import com.sun.net.httpserver.HttpServer;
 
 import java.awt.Desktop;
-import java.io.FileWriter;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URLEncoder;
@@ -11,44 +10,31 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import org.json.*;
 
 public class SpotifyAuth {
 
-    // These come from your Spotify dashboard
     private static final String CLIENT_ID = "d2c57d146afd4dc8b001014389ccae47";
     private static final String CLIENT_SECRET = "49223709406440e4b008c8c6b110a472";
     private static final String REDIRECT_URI = "http://127.0.0.1:8888/callback";
+    private static final String SCOPES =
+            "user-library-read playlist-modify-public playlist-modify-private";
 
-
-    // Scopes tells Spotify what my app wants permission to do
-    private static final String SCOPES = "user-library-read playlist-modify-public playlist-modify-private";
-
-    // This is what Spotify gives back after the user logs in
     private String accessToken;
 
-
-    // Method kicks off Spotify's authentification
     public void startLogin() throws Exception {
-        // Builds authorization url that points to authorize endpoint
-        // --4 Queries
-        // 1) client ID to identify your app to Spotify
-        // 2) tells Spotify you want an authorization code back
-        // 3) gives the link that Spotify should send the user back to after they approve/deny access
-        // 4) gives the permissions that my app is actually requesting
         String url = "https://accounts.spotify.com/authorize"
                 + "?client_id=" + CLIENT_ID
                 + "&response_type=code"
                 + "&redirect_uri=" + URLEncoder.encode(REDIRECT_URI, StandardCharsets.UTF_8)
                 + "&scope=" + URLEncoder.encode(SCOPES, StandardCharsets.UTF_8);
 
-        // This opens the URL in their default browser
         Desktop.getDesktop().browse(new URI(url));
-
         String code = waitForCode();
         exchangeCodeForToken(code);
-        System.out.println("Logged in! Token: " + accessToken);
+        System.out.println("Logged in!");
     }
 
     public String waitForCode() throws Exception {
@@ -56,7 +42,7 @@ public class SpotifyAuth {
         CompletableFuture<String> codeFuture = new CompletableFuture<>();
 
         server.createContext("/callback", exchange -> {
-            String query = exchange.getRequestURI().getQuery(); // "code=AQD..."
+            String query = exchange.getRequestURI().getQuery();
             String code = query.split("code=")[1].split("&")[0];
             String response = "Got it! You can close this tab.";
             exchange.sendResponseHeaders(200, response.length());
@@ -66,7 +52,7 @@ public class SpotifyAuth {
         });
 
         server.start();
-        String code = codeFuture.get(); // blocks until callback arrives
+        String code = codeFuture.get();
         server.stop(0);
         return code;
     }
@@ -88,20 +74,17 @@ public class SpotifyAuth {
                 .POST(HttpRequest.BodyPublishers.ofString(body))
                 .build();
 
-        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-
-        // Parse the JSON response to get the token
-        // response.body() looks like: {"access_token":"BQD...","token_type":"Bearer","expires_in":3600,...}
+        HttpResponse<String> response = client.send(request,
+                HttpResponse.BodyHandlers.ofString());
         String json = response.body();
         this.accessToken = json.split("\"access_token\":\"")[1].split("\"")[0];
     }
-
 
     public String getName() {
         HttpClient client = HttpClient.newHttpClient();
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create("https://api.spotify.com/v1/me"))
-                .GET() // Default is GET
+                .GET()
                 .header("Accept", "application/json")
                 .header("Authorization", "Bearer " + accessToken)
                 .build();
@@ -119,11 +102,7 @@ public class SpotifyAuth {
         return "";
     }
 
-    public void createPlaylist(ArrayList<String> songs) {
-        //TODO: CREATE PLAYLIST
-    }
-
-
+    // Loads liked songs into Main.allSongs via Main.addSong()
     public void getLikedSongs() {
         HttpClient client = HttpClient.newHttpClient();
         HttpRequest request = HttpRequest.newBuilder()
@@ -138,7 +117,8 @@ public class SpotifyAuth {
                     HttpResponse.BodyHandlers.ofString());
 
             if (response.statusCode() != 200) {
-                System.out.println("Error " + response.statusCode() + ": " + response.body());
+                System.out.println("Error " + response.statusCode()
+                        + ": " + response.body());
                 return;
             }
 
@@ -146,43 +126,176 @@ public class SpotifyAuth {
             JSONArray items = root.getJSONArray("items");
 
             Songstats songstats = new Songstats();
-            FileWriter writer = new FileWriter("liked_songs.txt");
 
             for (int i = 0; i < items.length(); i++) {
                 JSONObject track = items.getJSONObject(i).getJSONObject("track");
-                String name = track.getString("name");
-                String artist = track.getJSONArray("artists")
-                        .getJSONObject(0)
-                        .getString("name");
                 String trackId = track.getString("id");
 
-                // Fetch BPM from Songstats API
-                int bpm = 0;
                 try {
-                    JSONObject trackInfo = songstats.getTrackInfo(trackId);
-                    if (trackInfo != null) {
-                        JSONArray analysis = trackInfo.getJSONArray("audio_analysis");
-                        for (int j = 0; j < analysis.length(); j++) {
-                            JSONObject entry = analysis.getJSONObject(j);
-                            if (entry.getString("key").equals("tempo")) {
-                                bpm = (int) Math.round(Double.parseDouble(entry.getString("value")));
-                                break;
-                            }
-                        }
+                    Song song = songstats.buildSong(trackId);
+                    if (song != null) {
+                        Main.addSong(song);
+                        System.out.println("Loaded: " + song.getTitle()
+                                + " (" + song.getBpm() + " BPM)");
                     }
                 } catch (Exception e) {
-                    System.out.println("Could not fetch BPM for: " + name);
+                    System.out.println("Could not load song: "
+                            + track.getString("name"));
                 }
-
-                writer.write(name + ", " + artist + ", " + bpm + "\n");
             }
 
-            writer.close();
-            System.out.println("Saved " + items.length() + " songs to liked_songs.txt");
+            System.out.println("Loaded " + Main.allSongs.size()
+                    + " songs into pool.");
 
         } catch (Exception e) {
             e.printStackTrace();
         }
+
+//        // If no songs loaded successfully, fall back to default pop songs
+//        if (Main.allSongs.isEmpty()) {
+//            System.out.println("No liked songs loaded — using default pop songs.");
+//            for (Song s : DefaultSongs.getDefaultSongs()) {
+//                Main.addSong(s);
+//            }
+//        }
     }
 
+    public void createPlaylist(ArrayList<String> trackIds) {
+        HttpClient client = HttpClient.newHttpClient();
+
+        // Print what we're working with
+        System.out.println("Creating playlist with " + trackIds.size() + " tracks.");
+        for (String id : trackIds) {
+            System.out.println("  Track ID: " + id);
+        }
+
+        // ── Step 1: Get user ID ────────────────────────────────────────────
+        String userId = "";
+        try {
+            HttpRequest meRequest = HttpRequest.newBuilder()
+                    .uri(URI.create("https://api.spotify.com/v1/me"))
+                    .GET()
+                    .header("Accept", "application/json")
+                    .header("Authorization", "Bearer " + accessToken)
+                    .build();
+
+            HttpResponse<String> meResponse = client.send(meRequest,
+                    HttpResponse.BodyHandlers.ofString());
+            userId = meResponse.body().split("\"id\":\"")[1].split("\"")[0];
+            System.out.println("User ID: " + userId);
+
+        } catch (Exception e) {
+            System.out.println("Failed to get user ID: " + e.getMessage());
+            return;
+        }
+
+        // ── Step 2: Create empty playlist ─────────────────────────────────
+        String playlistId = "";
+        try {
+            String createBody = "{"
+                    + "\"name\":\"Your New Playlist!\","
+                    + "\"description\":\"Generated by Soundtrack Your Workout\","
+                    + "\"public\":false"
+                    + "}";
+
+            HttpRequest createRequest = HttpRequest.newBuilder()
+                    .uri(URI.create("https://api.spotify.com/v1/users/"
+                            + userId + "/playlists"))
+                    .header("Content-Type", "application/json")
+                    .header("Authorization", "Bearer " + accessToken)
+                    .POST(HttpRequest.BodyPublishers.ofString(createBody))
+                    .build();
+
+            HttpResponse<String> createResponse = client.send(createRequest,
+                    HttpResponse.BodyHandlers.ofString());
+
+            System.out.println("Create playlist response code: "
+                    + createResponse.statusCode());
+            System.out.println("Create playlist response: "
+                    + createResponse.body().substring(0,
+                    Math.min(200, createResponse.body().length())));
+
+            if (createResponse.statusCode() != 201) {
+                System.out.println("Failed to create playlist.");
+                return;
+            }
+
+            JSONObject createJson = new JSONObject(createResponse.body());
+            playlistId = createJson.getString("id");
+            System.out.println("Created playlist ID: " + playlistId);
+
+        } catch (Exception e) {
+            System.out.println("Failed to create playlist: " + e.getMessage());
+            return;
+        }
+
+        // ── Step 3: Filter out null/empty track IDs ────────────────────────
+        ArrayList<String> validIds = new ArrayList<>();
+        for (String id : trackIds) {
+            if (id != null && !id.trim().isEmpty()) {
+                validIds.add(id.trim());
+            } else {
+                System.out.println("Skipping null/empty track ID.");
+            }
+        }
+
+        if (validIds.isEmpty()) {
+            System.out.println("No valid track IDs — playlist will be empty.");
+            return;
+        }
+
+        // ── Step 4: Add songs in batches of 100 ───────────────────────────
+        try {
+            ArrayList<String> uris = new ArrayList<>();
+            for (String id : validIds) {
+                uris.add("spotify:track:" + id);
+            }
+
+            int batchSize = 100;
+            for (int i = 0; i < uris.size(); i += batchSize) {
+                List<String> batch = uris.subList(i,
+                        Math.min(i + batchSize, uris.size()));
+
+                StringBuilder uriArray = new StringBuilder("[");
+                for (int j = 0; j < batch.size(); j++) {
+                    uriArray.append("\"").append(batch.get(j)).append("\"");
+                    if (j < batch.size() - 1) uriArray.append(",");
+                }
+                uriArray.append("]");
+
+                String addBody = "{\"uris\":" + uriArray + "}";
+
+                System.out.println("Adding batch: " + addBody);
+
+                HttpRequest addRequest = HttpRequest.newBuilder()
+                        .uri(URI.create("https://api.spotify.com/v1/playlists/"
+                                + playlistId + "/items"))
+                        .header("Content-Type", "application/json")
+                        .header("Authorization", "Bearer " + accessToken)
+                        .POST(HttpRequest.BodyPublishers.ofString(addBody))
+                        .build();
+
+                HttpResponse<String> addResponse = client.send(addRequest,
+                        HttpResponse.BodyHandlers.ofString());
+
+                System.out.println("Add tracks response code: "
+                        + addResponse.statusCode());
+                System.out.println("Add tracks response: "
+                        + addResponse.body());
+
+                if (addResponse.statusCode() != 201) {
+                    System.out.println("Failed to add batch at " + i);
+                } else {
+                    System.out.println("Successfully added tracks "
+                            + i + "–" + Math.min(i + batchSize, uris.size()));
+                }
+            }
+
+            System.out.println("Playlist creation complete!");
+
+        } catch (Exception e) {
+            System.out.println("Failed to add tracks: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
 }
