@@ -4,6 +4,7 @@ import javax.swing.UIManager;
 
 public class Main {
 
+    //TODO: do more documentation
     public static ArrayList<Song> allSongs = new ArrayList<>();
     public static ArrayList<Song> availableSongs = new ArrayList<>();
 
